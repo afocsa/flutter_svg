@@ -222,6 +222,7 @@ class SvgPicture extends StatefulWidget {
     this.clipBehavior = Clip.hardEdge,
     this.colorFilter,
     this.cacheColorFilter = false,
+    this.onPictureInfoSet,
   }) : super(key: key);
 
   /// Instantiates a widget that renders an SVG picture from an [AssetBundle].
@@ -319,6 +320,7 @@ class SvgPicture extends StatefulWidget {
     this.excludeFromSemantics = false,
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
+    this.onPictureInfoSet,
   })  : pictureProvider = ExactAssetPicture(
           allowDrawingOutsideViewBox == true
               ? svgStringDecoderOutsideViewBox
@@ -379,6 +381,7 @@ class SvgPicture extends StatefulWidget {
     this.excludeFromSemantics = false,
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
+    this.onPictureInfoSet,
   })  : pictureProvider = NetworkPicture(
           allowDrawingOutsideViewBox == true
               ? svgByteDecoderOutsideViewBox
@@ -435,6 +438,7 @@ class SvgPicture extends StatefulWidget {
     this.excludeFromSemantics = false,
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
+    this.onPictureInfoSet,
   })  : pictureProvider = FilePicture(
           allowDrawingOutsideViewBox == true
               ? svgByteDecoderOutsideViewBox
@@ -487,6 +491,7 @@ class SvgPicture extends StatefulWidget {
     this.excludeFromSemantics = false,
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
+    this.onPictureInfoSet,
   })  : pictureProvider = MemoryPicture(
           allowDrawingOutsideViewBox == true
               ? svgByteDecoderOutsideViewBox
@@ -539,6 +544,7 @@ class SvgPicture extends StatefulWidget {
     this.excludeFromSemantics = false,
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
+    this.onPictureInfoSet,
   })  : pictureProvider = StringPicture(
           allowDrawingOutsideViewBox == true
               ? svgStringDecoderOutsideViewBox
@@ -663,6 +669,11 @@ class SvgPicture extends StatefulWidget {
   /// This defaults to false and must not be null.
   final bool cacheColorFilter;
 
+  /// Callback whenever the picture info is set.
+  ///
+  /// Useful to have access to the raw picture info (raw size, etc).
+  final ValueSetter<PictureInfo>? onPictureInfoSet;
+
   @override
   State<SvgPicture> createState() => _SvgPictureState();
 }
@@ -708,6 +719,9 @@ class _SvgPictureState extends State<SvgPicture> {
   void _handleImageChanged(PictureInfo? imageInfo, bool synchronousCall) {
     setState(() {
       _picture = imageInfo;
+      if (widget.onPictureInfoSet != null && _picture != null) {
+        widget.onPictureInfoSet!(_picture!);
+      }
     });
   }
 
