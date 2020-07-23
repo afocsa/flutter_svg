@@ -223,6 +223,7 @@ class SvgPicture extends StatefulWidget {
     this.colorFilter,
     this.cacheColorFilter = false,
     this.onPictureInfoSet,
+    this.onPictureError,
   }) : super(key: key);
 
   /// Instantiates a widget that renders an SVG picture from an [AssetBundle].
@@ -321,6 +322,7 @@ class SvgPicture extends StatefulWidget {
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
     this.onPictureInfoSet,
+    this.onPictureError,
   })  : pictureProvider = ExactAssetPicture(
           allowDrawingOutsideViewBox == true
               ? svgStringDecoderOutsideViewBox
@@ -382,6 +384,7 @@ class SvgPicture extends StatefulWidget {
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
     this.onPictureInfoSet,
+    this.onPictureError,
   })  : pictureProvider = NetworkPicture(
           allowDrawingOutsideViewBox == true
               ? svgByteDecoderOutsideViewBox
@@ -439,6 +442,7 @@ class SvgPicture extends StatefulWidget {
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
     this.onPictureInfoSet,
+    this.onPictureError,
   })  : pictureProvider = FilePicture(
           allowDrawingOutsideViewBox == true
               ? svgByteDecoderOutsideViewBox
@@ -492,6 +496,7 @@ class SvgPicture extends StatefulWidget {
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
     this.onPictureInfoSet,
+    this.onPictureError,
   })  : pictureProvider = MemoryPicture(
           allowDrawingOutsideViewBox == true
               ? svgByteDecoderOutsideViewBox
@@ -545,6 +550,7 @@ class SvgPicture extends StatefulWidget {
     this.clipBehavior = Clip.hardEdge,
     this.cacheColorFilter = false,
     this.onPictureInfoSet,
+    this.onPictureError,
   })  : pictureProvider = StringPicture(
           allowDrawingOutsideViewBox == true
               ? svgStringDecoderOutsideViewBox
@@ -673,6 +679,7 @@ class SvgPicture extends StatefulWidget {
   ///
   /// Useful to have access to the raw picture info (raw size, etc).
   final ValueSetter<PictureInfo>? onPictureInfoSet;
+  final ValueSetter<bool>? onPictureError;
 
   @override
   State<SvgPicture> createState() => _SvgPictureState();
@@ -682,6 +689,7 @@ class _SvgPictureState extends State<SvgPicture> {
   PictureInfo? _picture;
   PictureStream? _pictureStream;
   bool _isListeningToStream = false;
+  bool _error = false;
 
   @override
   void didChangeDependencies() {
@@ -711,8 +719,8 @@ class _SvgPictureState extends State<SvgPicture> {
 
   void _resolveImage() {
     final PictureStream newStream = widget.pictureProvider
-        .resolve(createLocalPictureConfiguration(context));
-    assert(newStream != null); // ignore: unnecessary_null_comparison
+        .resolve(createLocalPictureConfiguration(context), onError: _onError);
+    assert(newStream != null);
     _updateSourceStream(newStream);
   }
 
@@ -721,6 +729,15 @@ class _SvgPictureState extends State<SvgPicture> {
       _picture = imageInfo;
       if (widget.onPictureInfoSet != null && _picture != null) {
         widget.onPictureInfoSet!(_picture!);
+      }
+    });
+  }
+
+  void _onError(dynamic exception, StackTrace stackTrace) {
+    setState(() {
+      _error = true;
+      if (widget.onPictureError != null) {
+        widget.onPictureError!(_error);
       }
     });
   }
@@ -738,7 +755,7 @@ class _SvgPictureState extends State<SvgPicture> {
 
     _pictureStream = newStream;
     if (_isListeningToStream) {
-      _pictureStream!.addListener(_handleImageChanged);
+      _pictureStream!.addListener(_handleImageChanged, onError: _onError);
     }
   }
 
@@ -746,7 +763,7 @@ class _SvgPictureState extends State<SvgPicture> {
     if (_isListeningToStream) {
       return;
     }
-    _pictureStream!.addListener(_handleImageChanged);
+    _pictureStream!.addListener(_handleImageChanged, onError: _onError);
     _isListeningToStream = true;
   }
 
@@ -827,6 +844,8 @@ class _SvgPictureState extends State<SvgPicture> {
           ),
         ),
       );
+    } else if (_error) {
+      return Container();
     }
 
     return _maybeWrapWithSemantics(

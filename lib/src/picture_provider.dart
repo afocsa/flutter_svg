@@ -53,8 +53,7 @@ PictureConfiguration createLocalPictureConfiguration(
   }
   return PictureConfiguration(
     bundle: context != null ? DefaultAssetBundle.of(context) : rootBundle,
-    locale:
-        context != null ? Localizations.maybeLocaleOf(context) : null,
+    locale: context != null ? Localizations.maybeLocaleOf(context) : null,
     textDirection: context != null ? Directionality.maybeOf(context) : null,
     viewBox: viewBox,
     platform: defaultTargetPlatform,
@@ -522,18 +521,25 @@ class NetworkPicture extends PictureProvider<NetworkPicture> {
   Future<PictureInfo> _loadAsync(NetworkPicture key,
       {PictureErrorListener? onError}) async {
     assert(key == this);
-    final Uint8List bytes = await httpGet(url, headers: headers);
-    if (onError != null) {
+
+    try {
+      final Uint8List bytes = await httpGet(url);
       return decoder(
         bytes,
         colorFilter,
         key.toString(),
       ).catchError((Object error, StackTrace stack) {
-        onError(error, stack);
+        if (onError != null) {
+          onError(error, stack);
+        }
         return Future<PictureInfo>.error(error, stack);
       });
+    } catch (error, stack) {
+      if (onError != null) {
+        onError(error, stack);
+      }
+      return Future<PictureInfo>.error(error, stack);
     }
-    return decoder(bytes, colorFilter, key.toString());
   }
 
   @override
